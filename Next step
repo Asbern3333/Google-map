@@ -1,0 +1,79 @@
+Now if I want to publish it online for free can I?
+Yes, but with limits. You can host your frontend for free, but the backend that calls Google APIs needs a real server because:
+
+It uses your private Google API key (must stay hidden).
+
+Free hosts limit runtime and outbound requests.
+
+Here’s the practical breakdown:
+
+✅ Frontend (HTML/JS)
+
+You can host it free on:
+
+GitHub Pages
+
+Netlify
+
+Vercel
+
+Those hosts can serve your /public/index.html.
+But your backend must be online too.
+
+⚙️ Backend (Node.js + Express)
+
+You can host it free on one of these:
+
+Render.com — Free tier, simple setup.
+
+Create a new “Web Service”.
+
+Connect your GitHub repo.
+
+Add node server.js as start command.
+
+Add your Google API key as an environment variable.
+
+Railway.app — Free up to limited monthly hours.
+
+Vercel Functions — Works but more setup.
+
+🧱 Steps to publish (example: Render.com)
+
+Push your whole project to GitHub.
+
+Go to https://render.com
+.
+
+Create account → “New Web Service” → Connect repo.
+
+In “Environment Variables” add:
+
+GOOGLE_KEY=your_google_api_key
+
+
+In your server.js, replace the hardcoded key with:
+
+const GOOGLE_KEY = process.env.GOOGLE_KEY;
+
+
+Deploy. Render gives you a public URL like:
+
+https://your-app-name.onrender.com
+
+
+Update the fetch() call in your frontend (index.html) to use that URL instead of http://localhost:3000/export.
+
+⚠️ Notes
+
+Free tiers sleep after inactivity.
+
+Google API has daily quota limits.
+
+Never expose your API key in frontend code.
+
+Would you like me to prepare the exact file edits for publishing it on Render.com safely?
+
+
+
+- Add Stop Button
