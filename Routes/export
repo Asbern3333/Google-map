@@ -1,6 +1,6 @@
   const fs = require('fs');
   const { createObjectCsvWriter } = require('csv-writer');
-  const {placesSearchAll, placeDetails } = require('../Services/google');
+  const {placesSearchAll, placeDetails,placesSearchAllByZip } = require('../Services/google');
   const { getEmailFromWebsite } = require('../Services/scraper');
   const { getZipsByCity, getZipsByState } = require('../Services/Zip');
   /**
@@ -15,77 +15,146 @@
   cancel = v;
   }
 
-  function getCancel() {
-  return cancel;
-  }
-  async function exportPlaces(req, res) {
-  const { state, query, city,zipcode } = req.body;
-    
-    const searchTerm = `${query} ${state}`;
-    const safeSearch = searchTerm.replace(/[^a-z0-9]/gi, '_');
-    const dir = './result';
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir);
-    //const first = await placesSearch(query, state);
-    const items = [];
-    // Decide ZIP list
-    let zipList = [];
-    console.log("Searching", city, state);
-    if(zipcode)
-    {
-      zipList = [zipcode];
-      console.log("Using provided zipcode:", zipcode);
-    }
-    else
-    {
-        if (city) {
-          zipList = getZipsByCity(state,city);
-                  } 
-        else {
-          zipList = getZipsByState(state);
-            }
-    }
-    
-   
-    // City is not provided or empty
-    
-      for (const zip of zipList) {
-        if (cancel) {
-            cancel = false;
-            break;
-            }
-        const results = await placesSearchAll(`${query}`, zip);
-        // merge results
 
-        // const results = await placesSearchAll(query, state);
-        //const results = first.results || [];
-        for (const r of results) {
+  async function exportPlaces(req, res) {
+  const { state, query, city, zipcode } = req.body;
+
+  const searchTerm = `${query} ${state}`;
+  const safeSearch = searchTerm.replace(/[^a-z0-9]/gi, '_');
+  const dir = './result';
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir);
+
+  const items = [];
+
+  let zipList = [];
+  if (zipcode) {
+    zipList = [zipcode];
+  } else if (city) {
+    zipList = getZipsByCity(state, city);
+  } else {
+    zipList = getZipsByState(state);
+  }
+
+  // IMPORTANT: multiple keyword variations
+  const keywords = [
+    `${query}`,
+    `${query} company`,
+    `${query} service`,
+    `${query} services`,
+    `${query} near`,
+    `${query} business`
+  ];
+
+  for (const zip of zipList) {
+    if (cancel) {
+      cancel = false;
+      break;
+    }
+    console.log(`Searching ZIP: ${zip}`);
+   // for (const kw of keywords) {
+      //const results = await placesSearchAll(kw, zip);
+
+    const results = await placesSearchAllByZip(query , zip);
+      for (const r of results) {
         const det = await placeDetails(r.place_id);
         const d = det.result || {};
-        const email = await getEmailFromWebsite(d.website);
+
+        const email = await getEmailFromWebsite(r.website);
+        console.log(`Fetched details for place_id ${r.formatted_phone_number}: ${r.website}, email: ${email}`);
         items.push({
-          name: d.name || r.name || '',
-          address: d.formatted_address || r.formatted_address || '',
-          phone: d.formatted_phone_number || '',
-          website: d.website || '',
+          name: r.name || '',
+          address: r.formatted_address || '',
+          phone: r.formatted_phone_number || '',
+          website: r.website || '',
           email: email
-                  });
-                                }
-                              }
-    const csvPath = `${dir}/${safeSearch}-$.csv`;
-    const csvWriter = createObjectCsvWriter({
-      path: csvPath,
-      header: [
-        {id:'name', title:'Name'},
-        {id:'address', title:'Address'},
-        {id:'phone', title:'Phone'},
-        {id:'website', title:'Website'},
-        {id:'email', title:'Email'}
-              ]
-                                            });
-    await csvWriter.writeRecords(items);
-    res.download(csvPath);
-    // fs.unlink(csvPath, () => {});
-                                          }
+        });
+        
+      }
+  }
+  const csvPath = `${dir}/${safeSearch}-$.csv`;
+
+  const csvWriter = createObjectCsvWriter({
+    path: csvPath,
+    header: [
+      { id: 'name', title: 'Name' },
+      { id: 'address', title: 'Address' },
+      { id: 'phone', title: 'Phone' },
+      { id: 'website', title: 'Website' },
+      { id: 'email', title: 'Email' } 
+    ]
+  });
+
+  await csvWriter.writeRecords(items);
+  res.download(csvPath);
+}
+//   async function exportPlaces(req, res) {
+//   const { state, query, city,zipcode } = req.body;
+    
+//     const searchTerm = `${query} ${state}`;
+//     const safeSearch = searchTerm.replace(/[^a-z0-9]/gi, '_');
+//     const dir = './result';
+//     if (!fs.existsSync(dir)) fs.mkdirSync(dir);
+//     //const first = await placesSearch(query, state);
+//     const items = [];
+//     // Decide ZIP list
+//     let zipList = [];
+//     console.log("Searching", city, state);
+//     if(zipcode)
+//     {
+//       zipList = [zipcode];
+//       console.log("Using provided zipcode:", zipcode);
+//     }
+//     else
+//     {
+//         if (city) {
+//           zipList = getZipsByCity(state,city);
+//                   } 
+//         else {
+//           zipList = getZipsByState(state);
+//             }
+//     }
+    
+   
+//     // City is not provided or empty
+    
+//       for (const zip of zipList) {
+//         if (cancel) {
+//             cancel = false;
+//             break;
+//             }
+//         const results = await placesSearchAll(`${query}`, zip);
+//         // merge results
+
+//         // const results = await placesSearchAll(query, state);
+//         //const results = first.results || [];
+//         for (const r of results) {
+//         const det = await placeDetails(r.place_id);
+//         const d = det.result || {};
+//         const email = await getEmailFromWebsite(d.website);
+//         items.push({
+//           name: d.name || r.name || '',
+//           address: d.formatted_address || r.formatted_address || '',
+//           phone: d.formatted_phone_number || '',
+//           website: d.website || '',
+//           email: email
+//                   });
+//                                 }
+//                               }
+//     const csvPath = `${dir}/${safeSearch}-$.csv`;
+//     const csvWriter = createObjectCsvWriter({
+//       path: csvPath,
+//       header: [
+//         {id:'name', title:'Name'},
+//         {id:'address', title:'Address'},
+//         {id:'phone', title:'Phone'},
+//         {id:'website', title:'Website'},
+//         {id:'email', title:'Email'}
+//               ]
+//                                             });
+//     await csvWriter.writeRecords(items);
+//     res.download(csvPath);
+//     // fs.unlink(csvPath, () => {});
+//                                           }
 
     
 

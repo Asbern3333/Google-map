@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 // Load the JSON file
-const zipFilePath = path.join(__dirname, '../Data/zips_clean.json'); // adjust path if needed
+const zipFilePath = path.join(__dirname, '../Data/USCities.json'); // adjust path if needed
 let jsonData = [];
 
 try {
@@ -31,5 +31,16 @@ function getZipsByState(state) {
   ).map(r => r.zip_code));*/
   return jsonData.filter(item => item.state && item.state.trim().toLowerCase() === state.trim().toLowerCase()).map(r => r.zip_code);
 }
+function getBylatlongbyzip(zip) {
+  if (!zip) return null;
 
-module.exports = { getZipsByCity, getZipsByState };
+  const match = jsonData.find(item => item.zip_code == zip);
+  if (!match) return null;
+
+  return {
+    latitude: match.latitude,
+    longitude: match.longitude
+  };
+}
+
+module.exports = { getZipsByCity, getZipsByState,getBylatlongbyzip };
