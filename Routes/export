@@ -1,6 +1,6 @@
   const fs = require('fs');
   const { createObjectCsvWriter } = require('csv-writer');
-  const {placesSearchAll, placeDetails,placesSearchAllByZip } = require('../Services/google');
+  const { placeDetails,placesSearchAllByZip } = require('../Services/google');
   const { getEmailFromWebsite } = require('../Services/scraper');
   const { getZipsByCity, getZipsByState } = require('../Services/Zip');
   /**
@@ -36,14 +36,6 @@
   }
 
   // IMPORTANT: multiple keyword variations
-  const keywords = [
-    `${query}`,
-    `${query} company`,
-    `${query} service`,
-    `${query} services`,
-    `${query} near`,
-    `${query} business`
-  ];
 
   for (const zip of zipList) {
     if (cancel) {

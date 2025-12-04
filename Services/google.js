@@ -1,6 +1,9 @@
 const fetch = require('node-fetch');
 const { getBylatlongbyzip } = require('./Zip');
-const GOOGLE_KEY = 'AIzaSyB-ZQMnAePDYIZLaSO9zJZWYCf4t1EVe1c';
+const dotenv = require('dotenv');
+
+dotenv.config();
+const GOOGLE_KEY = process.env.API_KEY;
 
 
 /**-
@@ -13,39 +16,6 @@ async function placeDetails(place_id) {
   const res = await fetch(url);
   return res.json();
 }
-async function placesSearchAll(query, zip) {
-  const unique = new Map();
-  let nextToken = null;
-  let {latitude,longitude}=getBylatlongbyzip(zip);
-  do {
-    let q = `${query}`; // ZIP INSIDE QUERY
-    let url =  `https://maps.googleapis.com/maps/api/place/nearbysearch/json?` +
-  `location=${latitude},${longitude}` +
-  `&radius=1000` +
-  `&keyword=${encodeURIComponent(query)}` +
-  `&key=${GOOGLE_KEY}`;
-    if (nextToken) url += `&pagetoken=${nextToken}`;
-
-    const res = await fetch(url);
-    const data = await res.json();
-
-    if (data.results && data.results.length) {
-      for (const r of data.results) {
-        if (!unique.has(r.place_id)) {
-          unique.set(r.place_id, r);
-        }
-      }
-    }
-
-    nextToken = data.next_page_token;
-    if (nextToken) {
-      await new Promise(r => setTimeout(r, 2500));
-    }
-
-  } while (nextToken);
-
-  return Array.from(unique.values());
-}
 async function placesSearchAllByZip(query, zip) {
   const results = new Map();
   let nextToken = null;
@@ -55,7 +25,7 @@ async function placesSearchAllByZip(query, zip) {
     let url =
       `https://maps.googleapis.com/maps/api/place/nearbysearch/json?` +
       `location=${latitude},${longitude}` +
-      `&radius=2500` +
+      `&radius=5000` +
       `&keyword=${encodeURIComponent(query)}` +
       `&key=${GOOGLE_KEY}`;
 
@@ -73,11 +43,11 @@ async function placesSearchAllByZip(query, zip) {
 
         const comps = details?.result?.address_components || [];
 
-        const postal = comps.find(c => c.types.includes("postal_code"))?.long_name;
+        //const postal = comps.find(c => c.types.includes("postal_code"))?.long_name;
 
-        if (postal === String(zip)) {
+        //if (postal === String(zip)) {
           results.set(r.place_id, details.result);
-        }
+        //}
       }
     }
     nextToken = data.next_page_token;
@@ -120,4 +90,4 @@ async function placesSearchAllByZip(query, zip) {
 //   return Array.from(unique.values());
 // }
 
-module.exports = { placeDetails, placesSearchAll,placesSearchAllByZip };
+module.exports = { placeDetails,placesSearchAllByZip };
